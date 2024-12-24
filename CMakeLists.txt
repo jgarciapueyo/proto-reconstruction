@@ -8,6 +8,11 @@ project(
         LANGUAGES CXX
 )
 
+# EXTERNAL PACKAGES
+# OpenCV
+find_package(OpenCV REQUIRED)
+include_directories(${OpenCV_INCLUDE_DIRS})
+
 # C++ Configuration
 set(
         CMAKE_CXX_STANDARD 17
@@ -16,3 +21,4 @@ set(
 )
 
 add_executable(proto_reconstruction src/main.cpp)
+target_link_libraries(proto_reconstruction ${OpenCV_LIBS})
