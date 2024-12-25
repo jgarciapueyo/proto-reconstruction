@@ -45,7 +45,7 @@ target_link_libraries(proto_reconstruction ${OpenCV_LIBS})
 
 ## Step 3: Write the program code
 Create the `main.cpp` file inside the `src` directory to see which OpenCV version we have:
-```cpp
+```c++
 #include <iostream>
 #include <opencv2/opencv.hpp>
 
