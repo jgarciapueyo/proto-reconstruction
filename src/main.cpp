@@ -1,8 +1,30 @@
 #include <filesystem>
+#include <fstream>
+#include <opencv2/core/quaternion.hpp>
 #include <opencv2/opencv.hpp>
 
+static void writeTrajectory(
+    const std::vector<std::filesystem::path>& frames_in_directory,
+    const std::vector<cv::Mat>& trajectory) {
+  std::ofstream trajectory_file("estimated_trajectory.txt");
+  trajectory_file << "# estimated trajectory" << std::endl;
+  trajectory_file << "# file: 'rgbd_dataset_freiburg1_xyz.bag'" << std::endl;
+  trajectory_file << "# timestamp tx ty tz qx qy qz qw" << std::endl;
+
+  for (int idx = 0; idx < frames_in_directory.size() - 1; ++idx) {
+    const auto& frame_path = frames_in_directory[idx];
+    auto timestamp_str = frame_path.stem().string();
+    auto pose = trajectory[idx];
+    auto quat = cv::Quat<double>::createFromRotMat(pose(cv::Rect(0, 0, 3, 3)));
+    trajectory_file << timestamp_str << " " << pose.at<double>(0, 3) << " "
+                    << pose.at<double>(1, 3) << " " << pose.at<double>(2, 3)
+                    << " " << quat.x << " " << quat.y << " " << quat.z << " "
+                    << quat.w << std::endl;
+  }
+  trajectory_file.close();
+}
+
 int main() {
-  int a = 5;
   // 1. Read path of frames
   const std::string path{"../data/rgbd_dataset_freiburg1_xyz/rgb"};
   std::vector<std::filesystem::path> frames_in_directory;
@@ -26,7 +48,8 @@ int main() {
   auto current_descriptors = cv::Mat{};
   std::vector<cv::DMatch> matches;
   cv::Mat pose = cv::Mat::eye(4, 4, CV_64F);
-  cv::Mat trajectory =
+  std::vector<cv::Mat> trajectory;
+  cv::Mat trajectory_img =
       cv::Mat::zeros(600, 600, CV_8UC3);  // For trajectory visualization
 
   // 4. Set calibration matrix
@@ -88,13 +111,14 @@ int main() {
     // Draw trajectory
     double x = pose.at<double>(0, 3);
     double z = pose.at<double>(2, 3);
-    cv::circle(trajectory,
+    cv::circle(trajectory_img,
                cv::Point(300 + static_cast<int>(x), 300 - static_cast<int>(z)),
                1, cv::Scalar(0, 255, 0), 1);
 
     // Display results
-    cv::imshow("Trajectory", trajectory);
+    cv::imshow("Trajectory", trajectory_img);
     cv::imshow("Frame", current_frame);
+    trajectory.push_back(pose.clone());
 
     // Update previous frame
     prev_frame = current_frame;
@@ -107,5 +131,6 @@ int main() {
   }
 
   cv::destroyAllWindows();
+  writeTrajectory(frames_in_directory, trajectory);
   return 0;
 }
