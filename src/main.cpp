@@ -3,6 +3,8 @@
 #include <opencv2/core/quaternion.hpp>
 #include <opencv2/opencv.hpp>
 
+#include "proto_recon/visualization/visualizer.h"
+
 static void writeTrajectory(
     const std::vector<std::filesystem::path>& frames_in_directory,
     const std::vector<cv::Mat>& trajectory) {
@@ -132,5 +134,6 @@ int main() {
 
   cv::destroyAllWindows();
   writeTrajectory(frames_in_directory, trajectory);
+  drawTrajectory(trajectory);
   return 0;
 }

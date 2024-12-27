@@ -47,3 +47,7 @@ To compare the trajectories, we are going to use code from [raulmur/evaluate_ate
 ```bash
 python3 evaluate_ate_scale.py --plot trajectory.png ../data/rgbd_dataset_freiburg1_xyz/groundtruth.txt ../estimated_trajectory.txt 
 ```
+This allows us to obtain also an image of the trajectory:
+![Trajectory](./img/2_Evaluation.png)
+
+We can see how the trajectory is quite abrupt, since the estimation is not very good.

@@ -1,0 +1,3 @@
+[submodule "ext/Pangolin"]
+	path = ext/Pangolin
+	url = https://github.com/stevenlovegrove/Pangolin.git

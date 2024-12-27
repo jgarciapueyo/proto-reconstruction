@@ -12,6 +12,10 @@ project(
 # OpenCV
 find_package(OpenCV REQUIRED)
 include_directories(${OpenCV_INCLUDE_DIRS})
+# Pangolin
+add_subdirectory(ext/Pangolin)
+find_package(Pangolin REQUIRED)
+include_directories(${Pangolin_INCLUDE_DIRS})
 
 # C++ Configuration
 set(
@@ -20,5 +24,9 @@ set(
         CMAKE_CXX_EXTENSIONS OFF
 )
 
-add_executable(proto_reconstruction src/main.cpp)
-target_link_libraries(proto_reconstruction ${OpenCV_LIBS})
+include_directories(${PROJECT_SOURCE_DIR}/include)
+add_executable(proto_reconstruction
+        src/visualization/visualizer.cpp
+        src/main.cpp
+        )
+target_link_libraries(proto_reconstruction ${OpenCV_LIBS} ${Pangolin_LIBRARIES})

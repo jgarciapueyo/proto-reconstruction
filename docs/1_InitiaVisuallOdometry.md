@@ -178,5 +178,8 @@ Finally, we have to update any reference to values of the previous frames with t
     }
   }
 ```
+With this, we are able to observe the trajectory in a simple way as frames are processed:
+![Frames](./img/1_InitialvisualOdometry.png)
+
 ## Next Steps:
 This basic implementation of Visual Odometry can be extended to improve its robustness, speed, quality of code, visualization, etc. Also, we need a way to evaluate the error in our computation and compare it with the ground truth.
