@@ -1,7 +1,7 @@
 # Part 3: Visualization
 One of the best ways to debug and assess the quality of the trajectory estimation is to visualize it. We are going to use [Pangolin](https://github.com/stevenlovegrove/Pangolin) to visualize the trajectory that we compute.
 
-# Part 0: Installation and Building
+# Step 0: Installation and Building
 In order to build Pangolin, we are goint to install it as a submodule in our repository in `ext/` folder, for external dependencies:
 ```bash
 git submodule add https://github.com/stevenlovegrove/Pangolin.git ./ext/Pangolin
@@ -23,7 +23,7 @@ It is possible that you need to install the Python Development libraries, with t
 sudo apt install python3.10-dev
 ```
 
-# Part 1: Draw trajectory with pangolin
+# Step 1: Draw trajectory with pangolin
 We are going to create a function to draw the trajectory (inspired from [SLAM Book](https://github.com/gaoxiang12/slambook2)). This is going to be the first function in a different file, so we create the file `src/visualization/visualizer.cpp` with this function:
 ```c++
 #include "proto_recon/visualization/visualizer.h"

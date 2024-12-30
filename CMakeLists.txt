@@ -9,6 +9,10 @@ project(
 )
 
 # EXTERNAL PACKAGES
+# Eigen
+find_package(Eigen3 3.3 REQUIRED NO_MODULE)
+# Sophus
+include_directories(ext/Sophus)
 # OpenCV
 find_package(OpenCV REQUIRED)
 include_directories(${OpenCV_INCLUDE_DIRS})
@@ -27,6 +31,8 @@ set(
 include_directories(${PROJECT_SOURCE_DIR}/include)
 add_executable(proto_reconstruction
         src/visualization/visualizer.cpp
+        src/vo/mappoint.cpp
+        src/vo/frame.cpp
         src/main.cpp
-        )
-target_link_libraries(proto_reconstruction ${OpenCV_LIBS} ${Pangolin_LIBRARIES})
+)
+target_link_libraries(proto_reconstruction Eigen3::Eigen ${Sophus_LIBRARIES} ${OpenCV_LIBS} ${Pangolin_LIBRARIES})

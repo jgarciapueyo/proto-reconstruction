@@ -6,6 +6,8 @@
 #include <opencv2/opencv.hpp>
 #include <vector>
 
+namespace proto_recon {
+
 void drawTrajectory(const std::vector<cv::Mat>& trajectory) {
   // create pangolin window and plot the trajectory
   pangolin::CreateWindowAndBind("Trajectory Viewer", 1024, 768);
@@ -68,4 +70,6 @@ void drawTrajectory(const std::vector<cv::Mat>& trajectory) {
     usleep(5000);
     // sleep 5 ms
   }
+}
+
 }

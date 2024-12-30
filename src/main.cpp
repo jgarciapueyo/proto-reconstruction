@@ -4,6 +4,7 @@
 #include <opencv2/opencv.hpp>
 
 #include "proto_recon/visualization/visualizer.h"
+#include "proto_recon/vo/frame.h"
 
 static void writeTrajectory(
     const std::vector<std::filesystem::path>& frames_in_directory,
@@ -27,27 +28,21 @@ static void writeTrajectory(
 }
 
 int main() {
-  // 1. Read path of frames
+  // 1. Read path of images
   const std::string path{"../data/rgbd_dataset_freiburg1_xyz/rgb"};
-  std::vector<std::filesystem::path> frames_in_directory;
+  std::vector<std::filesystem::path> imgs_in_directory;
   std::copy(std::filesystem::directory_iterator(path),
             std::filesystem::directory_iterator(),
-            std::back_inserter(frames_in_directory));
-  std::sort(frames_in_directory.begin(), frames_in_directory.end());
+            std::back_inserter(imgs_in_directory));
+  std::sort(imgs_in_directory.begin(), imgs_in_directory.end());
 
   // 2. Set classes:
-  // ORB feture detector and descriptor
-  auto orb = cv::ORB::create(1000);
   // Brute Force Matcher
   auto bf = cv::BFMatcher(cv::NORM_HAMMING, true);
 
   // 3. Initialize variables
-  auto prev_frame = cv::Mat{};
-  std::vector<cv::KeyPoint> prev_keypoints;
-  auto prev_descriptors = cv::Mat{};
-  auto current_frame = cv::Mat{};
-  std::vector<cv::KeyPoint> current_keypoints;
-  auto current_descriptors = cv::Mat{};
+  auto prev_frame = proto_recon::Frame{};
+  auto current_frame = proto_recon::Frame{};
   std::vector<cv::DMatch> matches;
   cv::Mat pose = cv::Mat::eye(4, 4, CV_64F);
   std::vector<cv::Mat> trajectory;
@@ -59,22 +54,22 @@ int main() {
       (cv::Mat_<double>(3, 3) << 517.3, 0, 318.6, 0, 516.5, 255.3, 0, 0, 1);
 
   // 5. Iterate over the frames
-  for (const auto& frame_path : frames_in_directory) {
-    current_frame = cv::imread(frame_path.string());
+  uint64_t frame_id = 0;
+  for (const auto& img_path : imgs_in_directory) {
+    const auto img = cv::imread(img_path.string());
+    current_frame = proto_recon::Frame(frame_id, frame_id, img);
 
-    if (prev_frame.empty()) {
+    if (prev_frame.id() == -1) {
       prev_frame = current_frame;
-      orb->detectAndCompute(prev_frame, cv::noArray(), prev_keypoints,
-                            prev_descriptors);
+      prev_frame.extractFeatures();
       continue;
     }
 
     // Feature detection in current frame
-    orb->detectAndCompute(current_frame, cv::noArray(), current_keypoints,
-                          current_descriptors);
+    current_frame.extractFeatures();
 
     // Match features using brute force
-    bf.match(prev_descriptors, current_descriptors, matches);
+    bf.match(prev_frame.descriptors(), current_frame.descriptors(), matches);
     // Sort matches by distance
     std::sort(matches.begin(), matches.end(),
               [](const cv::DMatch& m1, const cv::DMatch& m2) {
@@ -84,8 +79,8 @@ int main() {
     std::vector<cv::Point2f> prev_pts;
     std::vector<cv::Point2f> current_pts;
     for (const auto& match : matches) {
-      prev_pts.push_back(prev_keypoints[match.queryIdx].pt);
-      current_pts.push_back(current_keypoints[match.trainIdx].pt);
+      prev_pts.push_back(prev_frame.keypoints()[match.queryIdx].pt);
+      current_pts.push_back(current_frame.keypoints()[match.trainIdx].pt);
     }
 
     // Estimate essential matrix
@@ -119,13 +114,12 @@ int main() {
 
     // Display results
     cv::imshow("Trajectory", trajectory_img);
-    cv::imshow("Frame", current_frame);
+    cv::imshow("Frame", current_frame.img());
     trajectory.push_back(pose.clone());
 
     // Update previous frame
     prev_frame = current_frame;
-    prev_keypoints = current_keypoints;
-    prev_descriptors = current_descriptors;
+    ++frame_id;
 
     if (cv::waitKey(1) == 'q') {
       break;
@@ -133,7 +127,7 @@ int main() {
   }
 
   cv::destroyAllWindows();
-  writeTrajectory(frames_in_directory, trajectory);
-  drawTrajectory(trajectory);
+  writeTrajectory(imgs_in_directory, trajectory);
+  proto_recon::drawTrajectory(trajectory);
   return 0;
 }
