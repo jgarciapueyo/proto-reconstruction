@@ -9,6 +9,7 @@ class MapPoint {
  public:
   explicit MapPoint(Eigen::Vector3f position3D);
   uint64_t id() const;
+  Eigen::Vector3f position() const;
 
  private:
   uint64_t id_;

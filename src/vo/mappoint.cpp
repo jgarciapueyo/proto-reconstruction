@@ -14,4 +14,6 @@ MapPoint::MapPoint(Eigen::Vector3f position3D)
 
 uint64_t MapPoint::id() const { return id_; }
 
+Eigen::Vector3f MapPoint::position() const { return position3D_; }
+
 }  // namespace proto_recon
