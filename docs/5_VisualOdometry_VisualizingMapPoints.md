@@ -309,3 +309,6 @@ void drawTrajectory(const std::vector<Sophus::SE3f>& trajectory,
   }
 }
 ```
+With these modifications, we are now able to visualize the map points in 3D
+![MapPoints](./img/5_VisualOdometry_VisualizingMapPoints.png)
+However, as we can see the map points are not correctly computed and look like a sphere. We are going to fix this in next parts.

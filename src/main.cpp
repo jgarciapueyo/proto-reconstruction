@@ -5,38 +5,37 @@
 #include <opencv2/opencv.hpp>
 #include <sophus/se3.hpp>
 
+#include "proto_recon/utils/imagestream.h"
 #include "proto_recon/visualization/visualizer.h"
 #include "proto_recon/vo/frame.h"
 
 static void writeTrajectory(
-    const std::vector<std::filesystem::path>& frames_in_directory,
+    const proto_recon::ImageStream &imagestream,
     const std::vector<Sophus::SE3f>& trajectory) {
   std::ofstream trajectory_file("estimated_trajectory_sophus.txt");
   trajectory_file << "# estimated trajectory" << std::endl;
   trajectory_file << "# file: 'rgbd_dataset_freiburg1_xyz.bag'" << std::endl;
   trajectory_file << "# timestamp tx ty tz qx qy qz qw" << std::endl;
 
-  for (int idx = 0; idx < frames_in_directory.size() - 1; ++idx) {
-    const auto& frame_path = frames_in_directory[idx];
-    auto timestamp_str = frame_path.stem().string();
+  int idx = 0;
+  for (const auto & filename : imagestream.filenames()) {
+    auto timestamp_str = filename.stem().string();
     auto pose = trajectory[idx];
     auto quat = pose.so3().unit_quaternion();
     trajectory_file << timestamp_str << " " << pose.translation().x() << " "
                     << pose.translation().y() << " " << pose.translation().z()
                     << " " << quat.x() << " " << quat.y() << " " << quat.z()
                     << " " << quat.w() << std::endl;
+    ++idx;
   }
   trajectory_file.close();
 }
 
 int main() {
   // 1. Read path of images
-  const std::string path{"../data/rgbd_dataset_freiburg1_xyz/rgb"};
-  std::vector<std::filesystem::path> imgs_in_directory;
-  std::copy(std::filesystem::directory_iterator(path),
-            std::filesystem::directory_iterator(),
-            std::back_inserter(imgs_in_directory));
-  std::sort(imgs_in_directory.begin(), imgs_in_directory.end());
+  // const std::string path{"../data/rgbd_dataset_freiburg1_xyz/rgb"};
+  const std::string path{"../data/kitti_dataset/01/image_0"};
+  proto_recon::ImageStream image_stream(path);
 
   // 2. Set classes:
   // Brute Force Matcher
@@ -53,15 +52,15 @@ int main() {
   std::vector<proto_recon::MapPoint> mappoints;
 
   // 4. Set calibration matrix
-  const cv::Mat K =
-      (cv::Mat_<double>(3, 3) << 517.3, 0, 318.6, 0, 516.5, 255.3, 0, 0, 1);
-  const Eigen::Matrix3f K_{{520.9, 0, 325.1}, {0, 521.0, 249.7}, {0, 0, 1}};
+  // const Eigen::Matrix3f K_{{520.9, 0, 325.1}, {0, 521.0, 249.7}, {0, 0, 1}};
+  const Eigen::Matrix3f K_{{718.856, 0, 607.1928}, {0, 718.856, 185.2157}, {0, 0, 1}};
+  cv::Mat K;
+  cv::eigen2cv(K_, K);
 
   // 5. Iterate over the frames
-  uint64_t frame_id = 0;
-  for (const auto& img_path : imgs_in_directory) {
-    const auto img = cv::imread(img_path.string());
-    current_frame = proto_recon::Frame(frame_id, frame_id, img);
+  while (!image_stream.finished()) {
+    auto [img_idx, img] = image_stream.nextImg();
+    current_frame = proto_recon::Frame(img_idx, img_idx, img);
 
     if (prev_frame.id() == -1) {
       prev_frame = current_frame;
@@ -151,7 +150,6 @@ int main() {
 
     // Update previous frame
     prev_frame = current_frame;
-    ++frame_id;
 
     if (cv::waitKey(1) == 'q') {
       break;
@@ -159,7 +157,7 @@ int main() {
   }
 
   cv::destroyAllWindows();
-  writeTrajectory(imgs_in_directory, trajectory);
+  writeTrajectory(image_stream, trajectory);
   proto_recon::drawTrajectory(trajectory, mappoints);
   std::cout << mappoints.size() << std::endl;
   return 0;
