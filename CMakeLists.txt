@@ -31,9 +31,11 @@ set(
 include_directories(${PROJECT_SOURCE_DIR}/include)
 add_executable(proto_reconstruction
         src/utils/imagestream.cpp
+        src/visualization/mapvisualizer.cpp
         src/vo/frame.cpp
         src/vo/map.cpp
         src/vo/mappoint.cpp
+        src/vo/vo.cpp
         src/main.cpp
 )
 target_link_libraries(proto_reconstruction Eigen3::Eigen ${Sophus_LIBRARIES} ${OpenCV_LIBS} ${Pangolin_LIBRARIES})
