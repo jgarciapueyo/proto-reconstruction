@@ -8,6 +8,13 @@ project(
         LANGUAGES CXX
 )
 
+# C++ Configuration
+set(
+        CMAKE_CXX_STANDARD 17
+        CMAKE_CXX_STANDARD_REQUIRED ON
+        CMAKE_CXX_EXTENSIONS OFF
+)
+
 # EXTERNAL PACKAGES
 # Eigen
 find_package(Eigen3 3.3 REQUIRED NO_MODULE)
@@ -21,21 +28,12 @@ add_subdirectory(ext/Pangolin)
 find_package(Pangolin REQUIRED)
 include_directories(${Pangolin_INCLUDE_DIRS})
 
-# C++ Configuration
-set(
-        CMAKE_CXX_STANDARD 17
-        CMAKE_CXX_STANDARD_REQUIRED ON
-        CMAKE_CXX_EXTENSIONS OFF
+set(THIRD_PARTY_LIBS
+        Eigen3::Eigen
+        ${OpenCV_LIBS}
+        ${Sophus_LIBRARIES}
+        ${Pangolin_LIBRARIES}
 )
 
-include_directories(${PROJECT_SOURCE_DIR}/include)
-add_executable(proto_reconstruction
-        src/utils/imagestream.cpp
-        src/visualization/mapvisualizer.cpp
-        src/vo/frame.cpp
-        src/vo/map.cpp
-        src/vo/mappoint.cpp
-        src/vo/vo.cpp
-        src/main.cpp
-)
-target_link_libraries(proto_reconstruction Eigen3::Eigen ${Sophus_LIBRARIES} ${OpenCV_LIBS} ${Pangolin_LIBRARIES})
+add_subdirectory(src)
+add_subdirectory(apps)

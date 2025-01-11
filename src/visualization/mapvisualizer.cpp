@@ -30,13 +30,14 @@ void MapVisualizer::update() const {
   d_cam_->Activate(s_cam_);
   glClearColor(1.0F, 1.0F, 1.0F, 1.0F);
   drawKeyFrames();
+  drawMapPoints();
   pangolin::FinishFrame();
 }
 
 void MapVisualizer::drawKeyFrames() const {
   glLineWidth(2);
 
-  for (auto& [keyframe_id, keyframe] : map_->keyframes()) {
+  for (const auto& [keyframe_id, keyframe] : map_->keyframes()) {
     // draw three axes of each pose
     glBegin(GL_LINES);
     glColor3f(1.0, 0.0, 0.0);
@@ -64,6 +65,7 @@ void MapVisualizer::drawKeyFrames() const {
   }
 
   // draw a connection
+  /*
   bool first_frame = true;
   std::shared_ptr<Frame> prev_frame;
   for (auto it = map_->keyframes().begin(); it != map_->keyframes().end();
@@ -72,6 +74,8 @@ void MapVisualizer::drawKeyFrames() const {
       prev_frame = it->second;
       first_frame = false;
     }
+
+    std::cout << it->first << std::endl;
 
     glColor3f(0.0, 0.0, 0.0);
     glBegin(GL_LINES);
@@ -85,9 +89,19 @@ void MapVisualizer::drawKeyFrames() const {
 
     prev_frame = it->second;
   }
-
-  usleep(5000);
+  */
   // sleep 5 ms
+}
+
+void MapVisualizer::drawMapPoints() const {
+  glPointSize(2);
+  glBegin(GL_POINTS);
+  glColor3f(0.0, 0.0, 0.0);
+  for (const auto& [mp_id, mappoint] : map_->map_points()) {
+    glVertex3f(mappoint->position().x(), mappoint->position().y(),
+               mappoint->position().z());
+  }
+  glEnd();
 }
 
 void drawTrajectory(const std::vector<Sophus::SE3f>& trajectory,

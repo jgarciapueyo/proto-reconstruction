@@ -12,10 +12,13 @@ VisualOdometry::VisualOdometry(ImageStream image_stream)
     : image_stream_(std::move(image_stream)), current_pose_(Sophus::SE3f()) {
   map_ = std::make_shared<Map>();
   map_visualizer_ = std::make_shared<MapVisualizer>(map_);
-  cv::eigen2cv(K_, K);
 }
 
-bool VisualOdometry::configure() { return true; }
+bool VisualOdometry::configure(const Eigen::Matrix3f& K) {
+  K_ = K;
+  cv::eigen2cv(K_, K_mat_);
+  return true;
+}
 
 void VisualOdometry::run() {
   while (!image_stream_.finished()) {
@@ -38,59 +41,29 @@ bool VisualOdometry::step() {
 
 void VisualOdometry::processFrame(std::shared_ptr<Frame> frame) {
   current_frame_ = frame;
+  current_frame_->extractFeatures();
 
   if (!first_frame_processed_) {
     prev_frame_ = current_frame_;
-    prev_frame_->extractFeatures();
     first_frame_processed_ = true;
     return;
   }
 
-  current_frame_->extractFeatures();
-
-  // Match features using brute force
-  // TODO: do not create each time
-  auto bf = cv::BFMatcher(cv::NORM_HAMMING, true);
-  // TODO: do not create each time
+  // Match frames
   std::vector<cv::DMatch> matches;
-
-  bf.match(prev_frame_->descriptors(), current_frame_->descriptors(), matches);
-  // Sort matches by distance
-  std::sort(matches.begin(), matches.end(),
-            [](const cv::DMatch& m1, const cv::DMatch& m2) {
-              return m1.distance < m2.distance;
-            });
-  // Extract matched keypoints
+  feature_matcher_.match(prev_frame_, current_frame_, matches);
+  // Extract matched keypoints // TODO: make part of the class
   std::vector<cv::Point2f> prev_pts;
   std::vector<cv::Point2f> current_pts;
-  for (const auto& match : matches) {
-    prev_pts.push_back(prev_frame_->keypoints()[match.queryIdx].pt);
-    current_pts.push_back(current_frame_->keypoints()[match.trainIdx].pt);
-  }
+  proto_recon::FeatureMatcher::extract_matched_keypoints(
+      prev_frame_, current_frame_, matches, prev_pts, current_pts);
 
-  // Estimate essential matrix
-  cv::Mat E = cv::findEssentialMat(prev_pts, current_pts, K, cv::RANSAC, 0.999,
-                                   1.0, cv::noArray());
+  cv::Mat essential_matrix;
+  Sophus::SE3f T_cw;
+  pose_estimation_.computePoseFromMatches(prev_pts, current_pts, K_mat_,
+                                          essential_matrix, T_cw);
 
-  // Recover pose
-  cv::Mat R;
-  cv::Mat t;
-  cv::recoverPose(E, prev_pts, current_pts, R, t);
-
-  // Normalize translation vector to maintain consistent scale
-  double curr_t_magnitude = cv::norm(t);
-  if (curr_t_magnitude > 0) {
-    double scale = 1.0 / curr_t_magnitude;
-    t *= scale;
-  }
-
-  // Update the pose
-  Sophus::Matrix3f R_sophus;
-  cv::cv2eigen(R, R_sophus);
-  Sophus::Vector3f t_sophus;
-  cv::cv2eigen(t, t_sophus);
-  Sophus::SE3f T(R_sophus, t_sophus);
-  current_pose_ *= T;
+  current_pose_ = T_cw * current_pose_;
   current_frame_->setTcw(current_pose_);
   map_->insertKeyframe(current_frame_);
 
@@ -115,8 +88,9 @@ void VisualOdometry::processFrame(std::shared_ptr<Frame> frame) {
     // x /= x.at<double>(3, 0);
     double scale = x.at<double>(3, 0);
     const auto point = Eigen::Vector3f(x.at<float>(0, 0), x.at<float>(1, 0),
-                                 x.at<float>(2, 0));
-    auto mappoint = std::make_shared<MapPoint>(point);
+                                       x.at<float>(2, 0));
+    const auto point_in_world = prev_frame_->Tcw() * point;
+    auto mappoint = std::make_shared<MapPoint>(point_in_world);
     map_->insertMapPoint(mappoint);
   }
 

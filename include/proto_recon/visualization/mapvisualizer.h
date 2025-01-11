@@ -17,6 +17,7 @@ class MapVisualizer {
 
  private:
   void drawKeyFrames() const;
+  void drawMapPoints() const;
 
   std::shared_ptr<Map> map_;
 
